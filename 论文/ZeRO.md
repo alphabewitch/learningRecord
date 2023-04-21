@@ -16,11 +16,11 @@
 
 当你有一个单卡装不下的大模型时，一个直接的解决办法是，把模型划分成不同的层，每一层都放到一块GPU上。
 
-![image-20230421175056587](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20230421175056587.png)
+![image-20230421175056587](img\ZeRO\image-20230421175056587.png)
 
 切分之后模型的前向传播和后向传播过程如下图所示：
 
-![image-20230421175147318](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20230421175147318.png)
+![image-20230421175147318](img\ZeRO\image-20230421175147318.png)
 
 这种方式有2个问题：
 
@@ -32,7 +32,7 @@
 
 比如Gpipe，其核心思想：**在模型并行的基础上，进一步引入数据并行的办法，即把原先的数据再划分成若干个batch，送入GPU进行训练**。未划分前的数据，叫**mini-batch**。在mini-batch上再划分的数据，叫**micro-batch**。
 
-![image-20230421175454085](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20230421175454085.png)
+![image-20230421175454085](img\ZeRO\image-20230421175454085.png)
 
 将batch切好，并逐一送入GPU的过程，就像一个流水生产线一样。
 
@@ -40,7 +40,7 @@
 
 对于激活值占用大量显存的问题，Gpipe采用用时间换取空间的思想，这种方法称为重计算（**re-materalization**）或者激活值检查点（**active checkpoint**）。我们可以在每块GPU上只保存来自上一块GPU的最后一层输出Z，其余的中间结果全部用完就舍弃，等到后向传播要再使用时就通过Z重新计算。
 
-![image-20230421180130792](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20230421180130792.png)
+![image-20230421180130792](img\ZeRO\image-20230421180130792.png)
 
 
 
@@ -48,7 +48,7 @@
 
 如下图所示，数据并行并不需要更改模型，而是将输入数据进行切分，每个GPU上保存完整的模型参数，只输入部分参数进行训练。每个GPU做完一轮前向传播和后向传播之后，各自算出一份梯度G，之后每块GPU将自己的梯度推送给负责AllReduce的GPU做梯度聚合操作（累加）。聚合完毕之后，各个计算GPU再拉取完成的梯度结果，来更新各自的模型参数，使得各块GPU上的模型参数保持一致。这个先聚合再拉取梯度的过程叫做AllReduce。
 
-![image-20230421180843676](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20230421180843676.png)
+![image-20230421180843676](img\ZeRO\image-20230421180843676.png)
 
 
 
@@ -66,15 +66,15 @@
 
 ① Reduce-Scatter操作：相邻相加
 
-![image-20230421181437438](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20230421181437438.png)
+![image-20230421181437438](img\ZeRO\image-20230421181437438.png)
 
-![image-20230421181449995](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20230421181449995.png)
+![image-20230421181449995](img\ZeRO\image-20230421181449995.png)
 
 经过2次相邻相加，每张卡上都有一块梯度拥有了对应位置的完整聚合（红色部分）。
 
 ② All-Gather操作：相邻复制
 
-![image-20230421181747638](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20230421181747638.png)
+![image-20230421181747638](img\ZeRO\image-20230421181747638.png)
 
 经过2次相邻复制，每张卡上的每个切块都拿到了完整的梯度信息。
 
@@ -111,11 +111,11 @@
 
 ​	在模型进行计算时，采用fp16精度能加快模型的计算速度，但是在模型更新时，我们希望参数的精度越精确越好，所以我们会额外保存一份fp32精度的参数用来更新参数。
 
-![image-20230421183809652](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20230421183809652.png)
+![image-20230421183809652](img\ZeRO\image-20230421183809652.png)
 
 所以原先可能只要4X大小的模型，通过混合精度训练，就需要16X大小的空间了，大了整整四倍，这还没有考虑到激活值的大小，实际上会更加占空间。
 
-![image-20230421183834590](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20230421183834590.png)
+![image-20230421183834590](img\ZeRO\image-20230421183834590.png)
 
 
 
@@ -127,7 +127,7 @@
 
 在ZeRO-1中，我们将十分占据显存的fp32的数据（参数和优化器状态 ）进行切分，比如2张卡的情况下，就每张卡只存放一半的参数和优化器状态。
 
-![image-20230421184336538](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20230421184336538.png)
+![image-20230421184336538](img\ZeRO\image-20230421184336538.png)
 
 注意：这里我们虽然切分了模型的参数，但是这与模型并行有本质的不同，因为在我们进行参数更新时，我们会通过通信拿到完整的参数，所以还是数据并行。
 
@@ -139,7 +139,7 @@
 
 第二阶段的目标放在了fp16精度的梯度，即计算中的梯度。我们将其进行切分，每张卡只保留一部分。
 
-![image-20230421184917498](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20230421184917498.png)
+![image-20230421184917498](img\ZeRO\image-20230421184917498.png)
 
 过程：
 
@@ -155,7 +155,7 @@
 
 第三阶段把目标放在fp16的参数上，即计算过程中的参数。我们将其进行切分，每张卡只保留一部分。
 
-![image-20230421185440568](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20230421185440568.png)
+![image-20230421185440568](img\ZeRO\image-20230421185440568.png)
 
 过程：
 
@@ -173,7 +173,7 @@ ZeRO中的第2部分用来优化剩余状态的显存占用。
 
 ### Partitioned Activation Checkpointing
 
-![image-20230421185857409](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20230421185857409.png)
+![image-20230421185857409](img\ZeRO\image-20230421185857409.png)
 
 过程：
 
@@ -213,7 +213,7 @@ ZeRO中的第2部分用来优化剩余状态的显存占用。
 
 MP在GPU之间产生了很高的通信量，超过单节点以适应更大的模型会导致通信带宽从每条链路300GB/秒下降到12.5GB/秒，性能大幅下降。
 
-![image-20230421190556152](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20230421190556152.png)
+![image-20230421190556152](img\ZeRO\image-20230421190556152.png)
 
 
 
@@ -221,7 +221,7 @@ MP在GPU之间产生了很高的通信量，超过单节点以适应更大的模
 
 因为当增加卡，模型和数据可以切分得更小，可以有更多的内存来存储中间状态，可以增大批量大小，导致每块卡做运算的时候的矩阵更大，能更好地利用单GPU的计算核心，导致单卡的性能提升。计算变多的同时，通讯没有变，使得计算/通信比更高了。也能使得通讯部分能更容易被计算部分覆盖掉。
 
-![image-20230421190615179](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20230421190615179.png)
+![image-20230421190615179](img\ZeRO\image-20230421190615179.png)
 
 
 
