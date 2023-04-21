@@ -237,6 +237,12 @@ MP在GPU之间产生了很高的通信量，超过单节点以适应更大的模
 
 4、[DeepSpeed之ZeRO系列：将显存优化进行到底 | Yet Another Blog (basicv8vc.github.io)](https://basicv8vc.github.io/posts/zero/)
 
+5、[模型并行下利用ZeRO进行显存优化 - 知乎 (zhihu.com)](https://zhuanlan.zhihu.com/p/619429610)
+
+6、[ 震惊！我竟然在1080Ti上加载了一个35亿参数的模型（ZeRO, Zero Redundancy Optimizer）_zero optimizer__大峰_的博客-CSDN博客](https://blog.csdn.net/weixin_43336281/article/details/126475071?ops_request_misc=%7B%22request%5Fid%22%3A%22168188703016800213078775%22%2C%22scm%22%3A%2220140713.130102334..%22%7D&request_id=168188703016800213078775&biz_id=0&utm_medium=distribute.pc_search_result.none-task-blog-2~all~baidu_landing_v2~default-7-126475071-null-null.142^v84^pc_search_v2,239^v2^insert_chatgpt&utm_term=ZeRO-offload&spm=1018.2226.3001.4187)
+
+7、[ZeRO+DeepSpeed:微软发布的高效大规模训练套件(含详细分布式训练流程) - 知乎 (zhihu.com)](https://zhuanlan.zhihu.com/p/108571246)
+
 
 
 
