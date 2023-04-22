@@ -24,7 +24,7 @@
 
 ​	3、*code refinement* ：完善代码，帮助提交者根据先前代码和评论来完善代码。
 
-![image-20230422131315867](img/Automating Code Review Activities by Large-Scale Pre-training/image-20230422131315867.png)
+![image-20230422131315867](img/AutomatingCodeReviewActivitiesbyLarge-ScalePre-training/image-20230422131315867.png)
 
 ​	
 
@@ -40,7 +40,7 @@
 
 ​	下图显示了三个关键任务的概况：
 
-![image-20230422140042629](img/Automating Code Review Activities by Large-Scale Pre-training/image-20230422140042629.png)
+![image-20230422140042629](img/AutomatingCodeReviewActivitiesbyLarge-ScalePre-training/image-20230422140042629.png)
 
 
 
@@ -62,7 +62,7 @@
 
 现在的很多开发者会把代码放在代码托管平台GitHub，在上面进行代码审查的工作，本数据集也从GitHub上收集。可以通过GitHub的API来获得JSON格式的数据，包括仓库的分支、拉动请求、代码差异、评论等。
 
-![image-20230422143627012](img/Automating Code Review Activities by Large-Scale Pre-training/image-20230422143627012.png)
+![image-20230422143627012](img/AutomatingCodeReviewActivitiesbyLarge-ScalePre-training/image-20230422143627012.png)
 
 ### 数据分类工作
 
@@ -86,7 +86,7 @@
 
 ​	本模型基于Transformer的编码器、解码器结构，由12个编码器层和12个解码器层组成，每个层有12个注意力头，隐藏头的大小为768，模型的总参数大小为223M，用CodeT5的参数来初始化CodeReview。然后用四个预训练任务来预训练模型。预训练完成之后，再进行微调，最后在进行评估。
 
-![image-20230422165250288](img/Automating Code Review Activities by Large-Scale Pre-training/image-20230422165250288.png)
+![image-20230422165250288](img/AutomatingCodeReviewActivitiesbyLarge-ScalePre-training/image-20230422165250288.png)
 
 ### 2、输入-输出表示法
 
@@ -118,7 +118,7 @@
 
 ### **问题1**：关于代码变更质量估计的性能
 
-![image-20230422160248572](img/Automating Code Review Activities by Large-Scale Pre-training/image-20230422160248572.png)
+![image-20230422160248572](img/AutomatingCodeReviewActivitiesbyLarge-ScalePre-training/image-20230422160248572.png)
 
 CodeReviewer模型与T5相比，F1和准确性分别提高了8.24%和7.07%。比CodeT5的改进也超过约7%，这表明我们的预训练任务有助于CodeReviewer更好地理解代码的变化。此外，从头开始训练的Transformer的性能不如其他三个模型，说明预训练的重要性。
 
@@ -126,7 +126,7 @@ CodeReviewer模型与T5相比，F1和准确性分别提高了8.24%和7.07%。比
 
 CodeReviewer产生的BLEU分数比基线模型高。然而，我们的模型的BLEU分数仍然低于10，说明这是一个困难的任务。评论是多样化和非唯一的。如下图所示，我们的模型预测传达的意图与基础事实相似。但是他们的词语差别很大，所以BLEU分数比Codex低。
 
-![image-20230422160740333](img/Automating Code Review Activities by Large-Scale Pre-training/image-20230422160740333.png)
+![image-20230422160740333](img/AutomatingCodeReviewActivitiesbyLarge-ScalePre-training/image-20230422160740333.png)
 
 ### 问题3：完善代码的性能
 
