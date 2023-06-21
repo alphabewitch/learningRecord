@@ -37,7 +37,7 @@
 
 **① GPipe**：将batch进一步切分为micorbatches，先执行微批次的前向传递，再执行微批次的后向传递。管道气泡的大小随着切分的粒度越细而越小，每张卡的空闲时间为(p-1)*(tf+tb)，**理想情况是microbatch的数量 >> worker的数量。但是这样会有一个问题，会导致每个worker需要存储很多微批次的中间激活值，占用很大的存储空间。**
 
-![image-20230619124256971](img/Efficient Large-Scale Language Model Training on GPU Clusters Using Megatron-LM/image-20230619124256971.png)
+![image-20230619124256971](./img/Efficient Large-Scale Language Model Training on GPU Clusters Using Megatron-LM/image-20230619124256971.png)
 
 **② PipeDream-Flush**：在warm-up阶段，workers执行不同次数的前向计算，只要有一个微批次的所有阶段的前向计算完成，马上一有机会就开启它的后向计算，简称1F 1B。反向执行完后能马上释放该阶段的内存。所以当microbatch的数量 >> worker的数量时，PipeDream-Flush相比GPipe有更好的存储效率。
 
