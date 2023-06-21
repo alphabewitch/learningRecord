@@ -7,9 +7,7 @@
 本调查中要解决的问题：基于你的模型和你的计算平台，有哪些通用的方法可以让你有效地进行训练。
 
 下标描述了不同的技术对通信、内存、计算效率的影响：
-
-<img src="img/Survey on Efficient Training of Large Neural Networks/image-20230522153255659.png" alt="image-20230522153255659" style="zoom:200%;" />
-
+![image-20230522153255659](img/SurveyonEfficientTrainingofLargeNeuralNetworks/image-20230522153255659.png)
 所调查的技术包括**①重计算、②卸载、③近似优化器状态和梯度、④数据并行、⑤模型并行、⑥管道并行**
 
 ## 02 减少单个GPU上显存占用

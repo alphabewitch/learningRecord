@@ -35,7 +35,7 @@ API的设计目标有以下两个：
 
 API的使用如下图所示：
 
-![image-20230523160949330](img/PyTorch Distributed/image-20230523160949330.png)
+![image-20230523160949330](img/PyTorchDistributed/image-20230523160949330.png)
 
 第10行创建了一个线性模型，第11行将这个本地模型转换为分布式模型，其余都不变。
 
@@ -60,11 +60,11 @@ API的使用如下图所示：
 
 为了解决集体通信在小张量上表现差的问题，提出了梯度桶思想。
 
-![image-20230523190121524](img/PyTorch Distributed/image-20230523190121524.png)
+![image-20230523190121524](img/PyTorchDistributed/image-20230523190121524.png)
 
 上图展示了每次AllReduce不同数量参数来AllReduce 60M个参数的总时间，发现每次传输的越多，总时间越少。**实验表明如果DDP不是在梯度张量变得可用时就立即启动AllReduce传输，而是要等待短时间将多个梯度放入一个AllReduce操作中，则可以实现更高的吞吐量和更低的延迟。**但是，DDP不应该在一个单独的AllReduce中通信所有梯度，否则在计算结束之前无法启动任何通信。
 
-![image-20230523192619196](img/PyTorch Distributed/image-20230523192619196.png)
+![image-20230523192619196](img/PyTorchDistributed/image-20230523192619196.png)
 
 上图显示了ResNet152的GPU和CPU向后计算的时间，该模型包含大约60M的参数。X轴是准备好的梯度的数量，Y轴是自后向计算开始后所花费的时间。在GPU上完成后向需要大约250ms。
 
@@ -74,13 +74,13 @@ DDP可以同时启动AllReduce操作与后向传递使通信与计算重叠，�
 
 有了梯度桶之后，DDP只需要在启动通信之前等待同一桶中的内容准备就绪。**所以DDP为每个梯度累加器注册一个autograd hook。 钩子在相应的累加器更新梯度后触发，并将检查它所属的桶。 如果同一桶中所有梯度的钩子都被触发，最后一个钩子将在该桶上触发异步AllReduce。**
 
-![image-20230523200510400](img/PyTorch Distributed/image-20230523200510400.png)
+![image-20230523200510400](img/PyTorchDistributed/image-20230523200510400.png)
 
 首先，上图a中，进程1是按顺序计算了四个梯度，进程2中没有，那么会导致进程1中的g1、g2会和进程2中的g3、g4进行AllReduce，内容不匹配。**所以需要使所有进程使用相同的桶顺序，不能在后面的桶先执行AllReduce。**
 
 其次，在一次训练中可能是训练了模型的一个子图，可能会跳过一些梯度。那么这些被跳过的梯度可能使其所在的桶无法变为就绪状态而启动AllReduce。上图b中，g3被跳过导致就绪信号不存在，所以，DDP会从前向传播的输出张量中遍历Autograd图来寻找所有参数。**DDP可以通过在前向传递结束时主动地将其余参数梯度标记为就绪来避免等待。**
 
-![image-20230529170318606](img/PyTorch Distributed/image-20230529170318606.png)
+![image-20230529170318606](img/PyTorchDistributed/image-20230529170318606.png)
 
 代码分为三个部分：constructor、forward和autograd_hook。
 
@@ -101,7 +101,7 @@ DDP可以同时启动AllReduce操作与后向传递使通信与计算重叠，�
 2. 它会标记当前param已经是ready状态；
 3. 若当前hook对应的bucket中的所有参数都处于ready状态，会调用collective communication进行all reduce操作；
 
-![image-20230601212328129](img/PyTorch Distributed/image-20230601212328129.png)
+![image-20230601212328129](img/PyTorchDistributed/image-20230601212328129.png)
 
 但是，由于DDP总是计算所有梯度的平均值，并将它们写回parameter.grad字段，*因为DDP和优化器的解耦设计，DDP不能向优化器提示信息，因此优化器无法区分梯度是否参与了最后一次向后传播？*
 

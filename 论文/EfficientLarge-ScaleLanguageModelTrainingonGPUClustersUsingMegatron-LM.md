@@ -37,15 +37,15 @@
 
 **① GPipe**：将batch进一步切分为micorbatches，先执行微批次的前向传递，再执行微批次的后向传递。管道气泡的大小随着切分的粒度越细而越小，每张卡的空闲时间为(p-1)*(tf+tb)，**理想情况是microbatch的数量 >> worker的数量。但是这样会有一个问题，会导致每个worker需要存储很多微批次的中间激活值，占用很大的存储空间。**
 
-![image-20230619124256971](./img/Efficient Large-Scale Language Model Training on GPU Clusters Using Megatron-LM/image-20230619124256971.png)
+![image-20230619124256971](img/EfficientLarge-ScaleLanguageModelTrainingonGPUClustersUsingMegatron-LM/image-20230619124256971.png)
 
 **② PipeDream-Flush**：在warm-up阶段，workers执行不同次数的前向计算，只要有一个微批次的所有阶段的前向计算完成，马上一有机会就开启它的后向计算，简称1F 1B。反向执行完后能马上释放该阶段的内存。所以当microbatch的数量 >> worker的数量时，PipeDream-Flush相比GPipe有更好的存储效率。
 
-![image-20230619124318070](img/Efficient Large-Scale Language Model Training on GPU Clusters Using Megatron-LM/image-20230619124318070.png)
+![image-20230619124318070](img/EfficientLarge-ScaleLanguageModelTrainingonGPUClustersUsingMegatron-LM/image-20230619124318070.png)
 
 **③ 有交错阶段的调度**：核心思想是让每张卡承载多个stage，上图中每个卡只有一个stage，下图中每个卡有2个stage，可以将模型切分得更细。比如一个16层的Transformer模型，在四张卡、stage为2的情况下可以将模型切分为8个stage，每张卡上放2个stage。设备1原来存放模型的1-4层，现在存放模型的1、2、9、10层。每张卡的空闲时间变为$\frac{(p-1)*(t_f+t_b)}{v}$。泡沫时间减少了但是带来了更高的通信代价。
 
-![image-20230619132527295](img/Efficient Large-Scale Language Model Training on GPU Clusters Using Megatron-LM/image-20230619132527295.png)
+![image-20230619132527295](img/EfficientLarge-ScaleLanguageModelTrainingonGPUClustersUsingMegatron-LM/image-20230619132527295.png)
 
 ### 3. 张量并行
 
@@ -65,7 +65,7 @@
 
 当数据并行的维度增加时，会使气泡变小，但是不能一直增加数据并行的维度，因为会占据很大的内存容量。
 
-![image-20230619150745642](img/Efficient Large-Scale Language Model Training on GPU Clusters Using Megatron-LM/image-20230619150745642.png)
+![image-20230619150745642](img/EfficientLarge-ScaleLanguageModelTrainingonGPUClustersUsingMegatron-LM/image-20230619150745642.png)
 
 ### 3. 数据并行和张量并行
 
@@ -77,11 +77,11 @@
 
 microbatch的size也会影响模型训练的吞吐量。单个GPU上microbatch size越大，则一定程度上吞吐量越大。
 
-![image-20230619155606593](img/Efficient Large-Scale Language Model Training on GPU Clusters Using Megatron-LM/image-20230619155606593.png)
+![image-20230619155606593](img/EfficientLarge-ScaleLanguageModelTrainingonGPUClustersUsingMegatron-LM/image-20230619155606593.png)
 
 但是，microbatch size不是越大越好。通过计算不同microbatch size时一个批处理所花费的总时间，可以得到下图，当参数量在十亿级别时，microbatch size的最佳值为4。
 
-![image-20230619161219397](img/Efficient Large-Scale Language Model Training on GPU Clusters Using Megatron-LM/image-20230619161219397.png)
+![image-20230619161219397](img/EfficientLarge-ScaleLanguageModelTrainingonGPUClustersUsingMegatron-LM/image-20230619161219397.png)
 
 **要点三：最优的microbatch大小会受到模型吞吐以及内存大小的影响，同时，pipeline的维度，数据并行维度，和全局batchsize大小，在固定集群数量的情况下，也会影响microbatch的最优取值。**
 
@@ -99,7 +99,7 @@ microbatch的size也会影响模型训练的吞吐量。单个GPU上microbatch s
 
 利用张量并行和管道并行来减少跨节点通信的开销。作者发现
 
-![image-20230619173549357](img/Efficient Large-Scale Language Model Training on GPU Clusters Using Megatron-LM/image-20230619173549357.png)
+![image-20230619173549357](img/EfficientLarge-ScaleLanguageModelTrainingonGPUClustersUsingMegatron-LM/image-20230619173549357.png)
 
 ## 参考资料
 
