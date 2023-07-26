@@ -97,9 +97,53 @@ microbatch的size也会影响模型训练的吞吐量。单个GPU上microbatch s
 
 ### 1. 通信优化
 
-利用张量并行和管道并行来减少跨节点通信的开销。作者发现
+利用张量并行和管道并行来减少跨节点通信的开销。作者发现在张量并行中每个Transformer层的输出会发送和接收两个完全相同的张量，如下图a所示。
+
+为了减少冗余的张量传输，可以通过scatter/gather通信算法来优化。将发送方的张量分成大小相等的块，然后只发送其中的一个块到下一节点的对应等级。然后在接收端通过NVLink进行all gather来收集，如下图的b。
 
 ![image-20230619173549357](img/EfficientLarge-ScaleLanguageModelTrainingonGPUClustersUsingMegatron-LM/image-20230619173549357.png)
+
+### 2. 计算优化
+
+① 改变Transformer层的数据布局，避免内存密集型转置操作，启用GEMM内核。将[b,s,a,h]转换为[s,b,a,h]，其中b，s，a，h分别是批次、序列、注意力头部、隐藏大小维度。
+
+② 使用PyTorch JIT为一系列元素操作生成融合内核。
+
+③ 创建两个自定义内核，实现scale、mask和softmax操作的融合。
+
+## 05 实验结果
+
+### 1. 运行环境
+
+GPU：A100，每个节点8张，80GB显存，通过NVLink、NVSwitch相连；
+
+带宽：每个节点有8个200Gbps的Infiniband用于程序通信；
+
+存储：NVME共享并行文件系统；
+
+模型：GPT；
+
+使用混合精度运行。16位精度A100的峰值吞吐量为312 teraFLOP/s。
+
+### 2. 端到端性能
+
+下图显示了GPT模型吞吐量范围从10亿到1万亿个参数
+
+![image-20230630161019934](img/EfficientLarge-ScaleLanguageModelTrainingonGPUClustersUsingMegatron-LM/image-20230630161019934.png)
+
+随着模型的增大，同时增大批量大小和GPU数量。更大的batchsize能更好地利用cuda核心进行矩阵乘法。
+
+以GPT-3模型𝑃 =1750亿参数作为一个例子。该模型在3000亿个令牌上进行了训练。在𝑛=1024个A100 GPU上，使用批处理大小1536，我们实现了每张卡140 teraFLOP/s的吞吐量。因此，训练该模型所需的时间为34天。对于1万亿参数模型，我们假设端到端训练需要4500亿个令牌，使用3072个A100GPU，我们可以实现163 teraFLOP/s的单卡GPU吞吐量，以及84天的端到端训练时间。我们相信这些训练时间（使用合理数量的GPU）是可行的。
+
+### 3. 与ZeRO-3相比
+
+
+
+
+
+
+
+
 
 ## 参考资料
 
